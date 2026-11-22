@@ -1,0 +1,42 @@
+ESTUDIO BEAT PRO — APP INSTALABLE
+==================================
+
+Contenido de esta carpeta (súbela completa, tal cual):
+  index.html            → la app
+  manifest.webmanifest  → nombre, ícono y colores de la app
+  sw.js                 → permite que funcione sin internet
+  icons/                → íconos de la app
+
+PASO 1 · Publicarla (gratis, con tu cuenta de GitHub)
+  1. Entra a github.com y crea un repositorio nuevo, por ejemplo: estudio-beat
+     (márcalo como Public).
+  2. En el repositorio: "Add file" → "Upload files" y arrastra TODO el contenido
+     de esta carpeta (index.html, manifest.webmanifest, sw.js y la carpeta icons).
+     Pulsa "Commit changes".
+  3. Ve a Settings → Pages. En "Branch" elige "main" y carpeta "/ (root)". Guarda.
+  4. En 1–2 minutos tu app queda en:
+        https://TU-USUARIO.github.io/estudio-beat/
+
+  (También sirve cualquier hosting con https: Netlify, Cloudflare Pages, etc.)
+
+PASO 2 · Instalarla en el celular
+  Android (Chrome):  abre el enlace → menú ⋮ → "Instalar aplicación"
+                     (o el botón "⇩ Instalar app" en la pestaña Proyecto).
+  iPhone (Safari):   abre el enlace → botón Compartir → "Añadir a pantalla de inicio".
+  Computadora:       en Chrome/Edge, el ícono de instalar en la barra de direcciones.
+
+Qué ganas como app
+  • Ícono propio en tu pantalla de inicio y abre en pantalla completa, sin barra del navegador.
+  • Funciona sin internet después de abrirla una vez.
+  • La pantalla no se apaga mientras tocas o suena la música.
+  • Grabar voz con el micrófono funciona (requiere https, que GitHub Pages ya tiene).
+  • Atajo: mantén presionado el ícono → "Tocar batería".
+
+Actualizar la app
+  Sube el nuevo index.html al mismo repositorio (reemplaza el anterior).
+  Si cambias cualquier archivo, sube también sw.js cambiando la línea
+  VERSION = 'beatpro-v1' a 'beatpro-v2', etc. La app avisará que hay versión nueva.
+
+¿Quieres subirla a Google Play?
+  Con la app ya publicada, entra a https://www.pwabuilder.com, pega tu enlace
+  y elige "Android". Te genera el paquete para la Play Store.
