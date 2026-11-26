@@ -313,7 +313,7 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
 .tsb.det{border-color:#37e07a;box-shadow:0 0 14px #37e07a88}.tsb.on{background:#1f5a31;border-color:#37e07a}
 .tmic{width:100%;max-width:360px;padding:16px;font-size:17px;border-radius:16px}
 .vgrp{margin-top:14px;padding-top:10px;border-top:1px solid var(--ln)}.vgrp .krow{margin-top:8px;gap:14px}
-.vrec{color:#ff8a96}.vrec.recing{background:var(--rd);color:#fff;animation:pulse 1s infinite}
+.vrec{color:#ff8a96}.vclr{color:#ff8a96;border-color:#5a2a30}.vrec.recing{background:var(--rd);color:#fff;animation:pulse 1s infinite}
 .tin{flex:1;min-width:150px;background:var(--p3);border:1px solid var(--ln);border-radius:10px;padding:10px;color:var(--tx)}
 .takes{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .take{display:flex;align-items:center;gap:8px;padding:8px;border-radius:12px;background:var(--p3);border:1px solid var(--ln)}
@@ -418,6 +418,7 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
     <button class="btn pri" id="vPlay">▶ Con efectos</button>
     <button class="btn" id="vPlayRaw">▷ Original</button>
     <button class="btn" id="vStop">■</button>
+    <button class="btn vclr" id="vClear">🗑 Limpiar</button>
     <label class="btn" for="vFile">↑ Cargar audio</label><input id="vFile" type="file" accept="audio/*" hidden>
    </div>
    <div class="row" style="margin-top:10px"><label class="row hint"><input type="checkbox" id="vClick"> Grabar con la canción sonando (usa audífonos)</label></div>
@@ -1247,6 +1248,7 @@ async function processVoice(){if(!E||!E.voiceRaw||VP.busy)return;const k=vKey();
  VP.busy=false;if(vKey()!==VP.key)scheduleProcess()}
 function setRaw(buf){const sr=buf.sampleRate,m=E.ac.createBuffer(1,buf.length,sr),d=m.getChannelData(0);
  for(let c=0;c<buf.numberOfChannels;c++){const s=buf.getChannelData(c);for(let i=0;i<d.length;i++)d[i]+=s[i]/buf.numberOfChannels}
+ let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));E.rawGain=pk>0?Math.min(40,.92/pk):1;
  E.voiceRaw=m;E.voiceBuf=null;VP.key='';VP.trackOf=null;drawWave();processVoice()}
 /* ---------- takes (saved on this device) ---------- */
 const VDB={db:null,open(){return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{const r=indexedDB.open('estudioBeatVoz',1);r.onupgradeneeded=()=>r.result.createObjectStore('takes',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
@@ -1268,7 +1270,7 @@ async function exportVoice(withFx=true){if(!E||!E.voiceRaw)return toast('No hay 
  if(withFx&&(!E.voiceBuf||VP.key!==vKey()))await processVoice();
  const src=withFx?E.voiceBuf:E.voiceRaw,sr=src.sampleRate,OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
  const oac=new OAC(2,Math.ceil(src.length+sr*(withFx?2.5:.1)),sr),oe=makeEngine(oac,false);applyMix(oe,true);
- CH.forEach(c=>{if(c.id!=='voice')oe.ch[c.id].fad.gain.value=0});oe.ch.voice.fad.gain.value=withFx?fdb(state.mix.voice.vol):1;
+ CH.forEach(c=>{if(c.id!=='voice')oe.ch[c.id].fad.gain.value=0});oe.ch.voice.fad.gain.value=withFx?fdb(state.mix.voice.vol):(E.rawGain||1);
  if(!withFx){oe.ch.voice.rs.gain.value=0;oe.ch.voice.ds.gain.value=0;oe.ch.voice.pan.pan.value=0;['lo','mid','hi'].forEach(k=>oe.ch.voice[k].gain.value=0)}
  const s=oac.createBufferSource();s.buffer=src;s.connect(withFx?vfxIn(oe):oe.ch.voice.in);s.start(.02);
  const out=await oac.startRendering();download(wav(out),'voz_'+((curTake&&curTake.name)||'toma').replace(/[^\wáéíóúñ -]/gi,'').trim().replace(/\s+/g,'_')+(withFx?'':'_original')+'.wav');toast('⬇ Voz exportada en WAV')}
@@ -1296,7 +1298,8 @@ $('#vRec').onclick=async()=>{ensureAudio();const b=$('#vRec');
   if($('#vClick').checked&&!playing)play();vRecorder.start();b.textContent='■ Detener';b.classList.add('recing');$('#vStatus').textContent='Grabando… habla o canta.'}
  catch(_){toast('Permite el micrófono (desde la app instalada) o carga un audio')}};
 $('#vPlay').onclick=()=>{ensureAudio();if(!E.voiceBuf)return toast(E.voiceRaw?'Procesando… intenta en un segundo':'Primero graba o carga una toma');stopVoice();startVoice(E.ac.currentTime+.02)};
-$('#vPlayRaw').onclick=()=>{ensureAudio();if(!E.voiceRaw)return toast('Primero graba o carga una toma');stopVoice();const s=E.ac.createBufferSource();s.buffer=E.voiceRaw;s.connect(E.out);s.start();voiceSrc=s};
+$('#vPlayRaw').onclick=()=>{ensureAudio();if(!E.voiceRaw)return toast('Primero graba o carga una toma');stopVoice();const s=E.ac.createBufferSource(),g=G(E.ac,E.rawGain||1);s.buffer=E.voiceRaw;s.connect(g);g.connect(E.out);s.start();voiceSrc=s;toast('▷ Original, sin efectos')};
+$('#vClear').onclick=()=>{if(!E||!E.voiceRaw)return toast('No hay grabación que limpiar');ask('¿Borrar esta grabación y empezar de nuevo?',async()=>{stopVoice();if(vRecorder&&vRecorder.state==='recording'){vRecorder.onstop=null;vRecorder.stop()}const t=curTake;if(t){try{await VDB.del(t.id)}catch(_){}}curTake=null;E.voiceRaw=null;E.voiceBuf=null;VP.key='';VP.trackOf=null;drawWave();$('#vStatus').textContent='Listo para grabar de nuevo.';listTakes();toast('🗑 Grabación borrada')})};
 $('#vStop').onclick=()=>{stopVoice();try{speechSynthesis.cancel()}catch(_){}};
 $('#vFile').onchange=async e=>{ensureAudio();const f=e.target.files[0];if(!f)return;try{const buf=await E.ac.decodeAudioData(await f.arrayBuffer());curTake=null;setRaw(buf);await saveTake(f.name.replace(/\.[^.]+$/,''),true)}catch(_){toast('No se pudo abrir ese audio')}e.target.value=''};
 $('#vSave').onclick=()=>saveTake(curTake?curTake.name:null,false);
