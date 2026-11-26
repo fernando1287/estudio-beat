@@ -323,6 +323,12 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
 .tta{width:100%;min-height:120px;background:var(--p3);border:1px solid var(--ln);border-radius:12px;padding:12px;color:var(--tx);font:inherit;resize:vertical}
 .ttsbox{margin-top:10px;display:flex;flex-direction:column;gap:10px}.ttsbox[hidden]{display:none}.ttsbox input[type=range]{flex:1;min-width:90px;accent-color:#ffb547}
 .steps{margin:0;padding-left:18px}
+.snds{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.snd{display:flex;align-items:center;gap:8px;padding:8px;border-radius:12px;background:var(--p3);border:1px solid var(--ln)}
+.splay{width:42px;height:42px;border-radius:50%;background:var(--ac);color:#241500;font-weight:900;flex:none}.splay.on{background:#ff4d5e;color:#fff}
+.sinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sinfo b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.sinfo small{color:var(--mu);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lic{align-self:flex-start;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;color:var(--lc);border:1px solid var(--lc)}
+.sbtns{display:flex;gap:4px;flex:none}.sbtns a{text-decoration:none;color:inherit}
 @media (max-width:700px){
  :root{--labw:112px}
  .bname,.hide-s{display:none}
@@ -362,6 +368,7 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
  <button class="tab" data-tab="mix">🎚 Mezcla</button>
  <button class="tab" data-tab="fx">✨ Efectos</button>
  <button class="tab" data-tab="voice">🎙 Voz</button>
+ <button class="tab" data-tab="sounds">🎧 Sonidos</button>
  <button class="tab" data-tab="proj">📁 Proyecto</button>
 </nav>
 <main>
@@ -462,6 +469,20 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
     <div class="row"><button class="btn pri" id="elGen">🗣 Generar con mi voz</button></div>
     <div class="hint" id="elStatus"></div>
    </div>
+  </div>
+ </section>
+
+ <section class="sec" id="sec-sounds">
+  <div class="panel">
+   <div class="ph"><div><h2>🎧 Banco de sonidos gratis</h2><div class="hint">Música y efectos con licencia Creative Commons (Freesound, Jamendo, Wikimedia) a través de Openverse. Escucha, descarga o llévalos a tu estudio.</div></div></div>
+   <div class="row"><input id="sndQ" class="tin" placeholder="¿Qué buscas? (alegre, lluvia, guitarra, epic…)" enterkeyhint="search"><button class="btn pri" id="sndGo">🔎 Buscar</button></div>
+   <div class="chips" id="sndQuick" style="margin-top:10px"></div>
+   <div class="row" style="margin-top:10px"><span class="lbl">Tipo</span><div class="chips"><button class="chip" data-scat="music">🎵 Música</button><button class="chip" data-scat="sound_effect">💥 Efectos</button><button class="chip" data-scat="">Todo</button></div></div>
+   <div class="row" style="margin-top:8px"><span class="lbl">Duración</span><div class="chips"><button class="chip" data-slen="">Cualquiera</button><button class="chip" data-slen="short">Corta</button><button class="chip" data-slen="medium">Media</button><button class="chip" data-slen="long">Larga</button></div></div>
+   <label class="hint" style="margin-top:10px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="sndCom" checked style="width:20px;height:20px;flex:none"> Solo los que permiten uso comercial (para videos monetizados)</label>
+   <div class="hint" id="sndStatus" style="margin-top:10px"></div>
+   <div id="sndList" class="snds"></div>
+   <div class="hint" style="margin-top:12px">📌 “Libre total” no necesita crédito. Las licencias <b>CC BY</b> piden poner el crédito del autor: toca 📋 para copiarlo y pégalo en la descripción de tu video. Las “NO comercial” no se pueden usar en videos que ganan dinero.</div>
   </div>
  </section>
 
@@ -1068,7 +1089,7 @@ function renderSelectors(){
  $('#scaleSel').innerHTML=Object.keys(SCALES).map(s=>`<option ${s===state.scale?'selected':''}>${s}</option>`).join('');
 }
 function renderPresets(){const h=Object.keys(PRESETS).map(n=>`<button class="chip" data-preset="${n}">${PRESETS[n].e} ${n}</button>`).join('');$('#presets1').innerHTML=h;$('#presets2').innerHTML=h}
-$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;$$('.tab').forEach(x=>x.classList.toggle('on',x===b));$$('.sec').forEach(s=>s.classList.toggle('on',s.id==='sec-'+b.dataset.tab));const t=b.dataset.tab;if(t==='seq')renderSeq();if(t==='mix')renderMixer();if(t==='fx')renderFx();if(t==='inst')renderCards();if(t==='voice')renderVoice();if(t==='proj')$('#projName').value=state.name;scrollTo(0,0)};
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;$$('.tab').forEach(x=>x.classList.toggle('on',x===b));$$('.sec').forEach(s=>s.classList.toggle('on',s.id==='sec-'+b.dataset.tab));const t=b.dataset.tab;if(t==='seq')renderSeq();if(t==='mix')renderMixer();if(t==='fx')renderFx();if(t==='inst')renderCards();if(t==='voice')renderVoice();if(t==='sounds')sndInit();else sndStop();if(t==='proj')$('#projName').value=state.name;scrollTo(0,0)};
 
 /* =========================================================
    SEQUENCER
@@ -1900,6 +1921,47 @@ document.addEventListener('click',e=>{if(PI!=='tuner')return;
 });
 
 /* =========================================================
+   SOUND BANK · free Creative Commons music and effects (Openverse)
+   ========================================================= */
+const SND={q:'',cat:'music',len:'',com:true,page:1,res:[],busy:false,audio:null,playing:null,more:false};
+const SND_QUICK=[['🎬 Música para video','cinematic','music'],['😊 Alegre','happy upbeat','music'],['🌙 Lo-fi','lofi chill','music'],['⚡ Épica','epic','music'],['🎸 Acústica','acoustic guitar','music'],['🌴 Latina','latin','music'],['🎹 Piano','piano','music'],['😱 Suspenso','suspense','music'],['👏 Aplausos','applause','sound_effect'],['😂 Risas','laugh','sound_effect'],['🌧 Lluvia','rain','sound_effect'],['💥 Explosión','explosion','sound_effect'],['🌬 Transición','whoosh','sound_effect'],['🔔 Notificación','notification','sound_effect']];
+const LIC={cc0:['Libre total','Sin pedir crédito','#37e07a'],pdm:['Dominio público','Sin pedir crédito','#37e07a'],by:['CC BY','Da crédito al autor','#4db8ff'],'by-sa':['CC BY-SA','Crédito y misma licencia','#4db8ff'],'by-nc':['CC BY-NC','Crédito · NO comercial','#ffb547'],'by-nc-sa':['CC BY-NC-SA','Crédito · NO comercial','#ffb547'],'by-nd':['CC BY-ND','Crédito · sin modificar','#ff8a96'],'by-nc-nd':['CC BY-NC-ND','NO comercial · sin modificar','#ff8a96'],sampling:['Sampling','Ver licencia','#ffb547']};
+const mmss=ms=>{if(!ms)return'';const s=Math.round(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function sndInit(){$('#sndQuick').innerHTML=SND_QUICK.map(([l,q,c])=>`<button class="chip" data-sq="${q}" data-sc="${c}">${l}</button>`).join('');sndCtl()}
+function sndCtl(){$$('[data-scat]').forEach(b=>b.classList.toggle('on',b.dataset.scat===SND.cat));$$('[data-slen]').forEach(b=>b.classList.toggle('on',b.dataset.slen===SND.len));$('#sndCom').checked=SND.com}
+async function sndSearch(more){if(SND.busy)return;const q=$('#sndQ').value.trim();if(!q)return toast('Escribe qué buscas (ej. “alegre”, “lluvia”, “guitarra”)');
+ if(!more){SND.page=1;SND.res=[];SND.q=q}else SND.page++;SND.busy=true;$('#sndStatus').textContent='Buscando…';
+ const p=new URLSearchParams({q:SND.q,page:SND.page,page_size:20,filter_dead:'true'});if(SND.cat)p.set('category',SND.cat);if(SND.len)p.set('length',SND.len);if(SND.com)p.set('license_type','commercial');
+ try{const r=await fetch('https://api.openverse.org/v1/audio/?'+p);if(!r.ok)throw new Error(r.status===429?'Muchas búsquedas seguidas; espera un minuto':'El banco respondió '+r.status);
+  const j=await r.json();SND.res=SND.res.concat(j.results||[]);SND.more=(j.page_count||1)>SND.page;
+  $('#sndStatus').textContent=SND.res.length?`${j.result_count>SND.res.length?j.result_count+' resultados':SND.res.length+' resultados'} · licencias Creative Commons`:'No encontré nada; prueba otra palabra (en inglés suele haber más: “happy”, “rain”).';sndRender()}
+ catch(e){$('#sndStatus').textContent='✗ '+(e.message.includes('Failed')||e.message.includes('fetch')?'No hay conexión con el banco de sonidos. Revisa tu internet.':e.message)}
+ SND.busy=false}
+function sndRender(){$('#sndList').innerHTML=SND.res.map((s,i)=>{const L=LIC[s.license]||[String(s.license||'?').toUpperCase(),'Ver licencia','#8a93a5'];
+ return `<div class="snd" data-si="${i}"><button class="splay ${SND.playing===i?'on':''}" data-sp="${i}">${SND.playing===i?'■':'▶'}</button>
+ <div class="sinfo"><b>${esc(s.title||'Sin título')}</b><small>${esc(s.creator||'Autor desconocido')} · ${esc(s.source||s.provider||'')}${s.duration?' · '+mmss(s.duration):''}</small>
+ <span class="lic" style="--lc:${L[2]}">${L[0]} · ${L[1]}</span></div>
+ <div class="sbtns"><button class="tb sm" data-sadd="${i}" title="Llevar al estudio">➕</button><a class="tb sm" href="${esc(s.url)}" target="_blank" rel="noopener" title="Descargar">⬇</a><button class="tb sm" data-scr="${i}" title="Copiar crédito">📋</button></div></div>`}).join('')+(SND.more?'<button class="btn" id="sndMore" style="width:100%;margin-top:6px">Cargar más</button>':'')}
+function sndStop(){if(SND.audio){SND.audio.pause();SND.audio=null}SND.playing=null}
+document.addEventListener('click',async e=>{
+ const qk=e.target.closest('[data-sq]');if(qk){$('#sndQ').value=qk.dataset.sq;SND.cat=qk.dataset.sc;sndCtl();sndSearch();return}
+ const c=e.target.closest('[data-scat]');if(c){SND.cat=c.dataset.scat;sndCtl();if($('#sndQ').value.trim())sndSearch();return}
+ const l=e.target.closest('[data-slen]');if(l){SND.len=l.dataset.slen;sndCtl();if($('#sndQ').value.trim())sndSearch();return}
+ if(e.target.closest('#sndGo')){sndSearch();return}
+ if(e.target.closest('#sndMore')){sndSearch(true);return}
+ const pl=e.target.closest('[data-sp]');if(pl){const i=+pl.dataset.sp,was=SND.playing===i;sndStop();if(!was){const a=new Audio(SND.res[i].url);a.onended=()=>{SND.playing=null;sndRender()};a.onerror=()=>{toast('No se pudo reproducir este sonido');SND.playing=null;sndRender()};a.play().catch(()=>{});SND.audio=a;SND.playing=i}sndRender();return}
+ const cr=e.target.closest('[data-scr]');if(cr){const s=SND.res[+cr.dataset.scr],t=s.attribution||`"${s.title}" por ${s.creator} (${(s.license||'').toUpperCase()} ${s.license_version||''}) ${s.foreign_landing_url||s.url}`;
+  try{await navigator.clipboard.writeText(t);toast('📋 Crédito copiado: pégalo en la descripción de tu video')}catch(_){toast(t)}return}
+ const ad=e.target.closest('[data-sadd]');if(ad){const s=SND.res[+ad.dataset.sadd];ensureAudio();ad.disabled=true;toast('Trayendo el sonido…');
+  try{const r=await fetch(s.url);if(!r.ok)throw 0;const buf=await E.ac.decodeAudioData(await r.arrayBuffer());curTake=null;state.vfx={...VFX_DEF,hpf:20,comp:0};vPreset='Natural';state.mix.voice.rev=0;state.mix.voice.dly=0;applyMix();applyVFX();setRaw(buf);
+   await saveTake('🎵 '+(s.title||'Sonido').slice(0,40),true);toast('✓ Está en Voz → Mis tomas. Suena con tu canción y se exporta en la mezcla.')}
+  catch(_){toast('Este sonido no deja importarse directo. Usa ⬇ para descargarlo y luego “Cargar audio” en Voz.')}ad.disabled=false;return}
+});
+$('#sndQ').addEventListener('keydown',e=>{if(e.key==='Enter')sndSearch()});
+$('#sndCom').onchange=e=>{SND.com=e.target.checked;if($('#sndQ').value.trim())sndSearch()};
+
+/* =========================================================
    NOTE EDITOR (piano roll)
    ========================================================= */
 const ED={id:null,len:2,oct:3,cw:36,rh:28};
@@ -1981,7 +2043,7 @@ function loadPreset(name,noPlay){
     else if(pt.k==='arp'){const v=voicing(pc,q,pt.c);ns=[{'1':v[0],'3':v[1],'5':v[2],'8':v[0]+12}[ch]??v[0]]}
     last=ns.map(n=>({s:off+k,n,d:1,v:pt.k==='chord'?.7:.82}));arr.push(...last)}
   })});
- updBpm();renderSelectors();renderSeq();renderCards();applyMix();autosave();toast(pr.e+' '+name+' cargado en patrón '+state.pattern);
+ updBpm();renderSelectors();renderSeq();renderCards();applyMix();autosave();if(!noPlay)toast(pr.e+' '+name+' cargado en patrón '+state.pattern);
  if(!playing&&!noPlay)play();
 }
 
