@@ -313,7 +313,7 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
 .tsb.det{border-color:#37e07a;box-shadow:0 0 14px #37e07a88}.tsb.on{background:#1f5a31;border-color:#37e07a}
 .tmic{width:100%;max-width:360px;padding:16px;font-size:17px;border-radius:16px}
 .vgrp{margin-top:14px;padding-top:10px;border-top:1px solid var(--ln)}.vgrp .krow{margin-top:8px;gap:14px}
-.vrec{color:#ff8a96}.vclr{color:#ff8a96;border-color:#5a2a30}.vrec.recing{background:var(--rd);color:#fff;animation:pulse 1s infinite}
+.vrec{color:#ff8a96}.vnr{color:#7ce8ff;border-color:#24505a}.vnr:disabled{opacity:.5}.vclr{color:#ff8a96;border-color:#5a2a30}.vrec.recing{background:var(--rd);color:#fff;animation:pulse 1s infinite}
 .tin{flex:1;min-width:150px;background:var(--p3);border:1px solid var(--ln);border-radius:10px;padding:10px;color:var(--tx)}
 .takes{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .take{display:flex;align-items:center;gap:8px;padding:8px;border-radius:12px;background:var(--p3);border:1px solid var(--ln)}
@@ -419,6 +419,10 @@ main{flex:1;padding:12px;padding-bottom:calc(30px + var(--safeB));max-width:1500
     <button class="btn" id="vPlayRaw">▷ Original</button>
     <button class="btn" id="vStop">■</button>
     <button class="btn vclr" id="vClear">🗑 Limpiar</button>
+   </div>
+   <div class="row" style="margin-top:8px">
+    <button class="btn vnr" id="vNr">🧹 Quitar ruido de fondo</button>
+    <button class="btn vnr" id="vIso">🤖 Quitar música y fondo (IA)</button>
     <label class="btn" for="vFile">↑ Cargar audio</label><input id="vFile" type="file" accept="audio/*" hidden>
    </div>
    <div class="row" style="margin-top:10px"><label class="row hint"><input type="checkbox" id="vClick"> Grabar con la canción sonando (usa audífonos)</label></div>
@@ -594,7 +598,7 @@ function defState(){
  const s={v:4,kitVol:.8,name:'Mi canción',bpm:94,swing:0,len:32,pattern:'A',kit:'808',key:9,scale:'Menor',metro:false,
   styles:{},oct:{},view:{},patterns:{},song:{on:false,chain:['A','A','B','A']},rowMute:{},drumLen:1,
   mix:{master:{vol:.8,glue:.45,bright:.1,body:.1}},
-  fx:{rev:'Sala',revLvl:.8,dly:'1/8.',dlyFb:.35,dlyLvl:.7},vfx:{pitch:0,tune:0,gate:0,hpf:80,b1:0,b2:0,b3:0,b4:0,b5:0,comp:.3,deess:0,warm:0,radio:0,robot:0,dist:0,chorus:0,flanger:0,trem:0,double:0}};
+  fx:{rev:'Sala',revLvl:.8,dly:'1/8.',dlyFb:.35,dlyLvl:.7},vfx:{nr:0,pitch:0,tune:0,gate:0,hpf:80,b1:0,b2:0,b3:0,b4:0,b5:0,comp:.3,deess:0,warm:0,radio:0,robot:0,dist:0,chorus:0,flanger:0,trem:0,double:0}};
  INST.forEach(i=>{if(i.styles){s.styles[i.id]=i.styles[0];s.oct[i.id]=i.oct;s.view[i.id]=i.views[0]}});
  PATS.forEach(p=>s.patterns[p]=emptyPat());
  CH.forEach(c=>s.mix[c.id]={vol:.8,pan:0,rev:0,dly:0,lo:0,mid:0,hi:0,mute:false,solo:false,...c.d});
@@ -1039,7 +1043,7 @@ function setVol(box,v){const path=box.dataset.vp;v=clamp(+v,0,1);setP(path,v);bo
 document.addEventListener('input',e=>{const box=e.target.closest('.volc');if(box)setVol(box,e.target.value)});
 document.addEventListener('click',e=>{const b=e.target.closest('.vb');if(!b)return;const box=b.closest('.volc');setVol(box,getP(box.dataset.vp)+ +b.dataset.vd*.03)});
 function fader(path){const v=getP(path);return `<div class="fader" data-f="${path}" style="--p:${v}"><div class="ft"></div></div>`}
-function ctlChanged(path){if(E)applyMix();autosave();if(path.startsWith('vfx.')){applyVFX();if(/pitch|tune|gate/.test(path))scheduleProcess()}if(path==='swing'){}}
+function ctlChanged(path){if(E)applyMix();autosave();if(path.startsWith('vfx.')){applyVFX();if(/pitch|tune|gate|nr/.test(path))scheduleProcess()}if(path==='swing'){}}
 document.addEventListener('pointerdown',e=>{
  const k=e.target.closest('.knob');const f=e.target.closest('.fader');
  if(k){e.preventDefault();const min=+k.dataset.min,max=+k.dataset.max,path=k.dataset.k,y0=e.clientY,v0=getP(path);
@@ -1165,7 +1169,7 @@ document.addEventListener('click',e=>{const r=e.target.closest('[data-rev]'),d=e
 /* =========================================================
    VOICE STUDIO · effects rack, takes, export, text-to-voice
    ========================================================= */
-const VFX_DEF={pitch:0,tune:0,gate:0,hpf:80,b1:0,b2:0,b3:0,b4:0,b5:0,comp:.3,deess:0,warm:0,radio:0,robot:0,dist:0,chorus:0,flanger:0,trem:0,double:0};
+const VFX_DEF={nr:0,pitch:0,tune:0,gate:0,hpf:80,b1:0,b2:0,b3:0,b4:0,b5:0,comp:.3,deess:0,warm:0,radio:0,robot:0,dist:0,chorus:0,flanger:0,trem:0,double:0};
 const VPRESETS={
  'Natural':{e:'🎤'},
  'Locutor':{e:'📻',hpf:70,b1:3,b2:-2,b4:3,b5:2,comp:.75,deess:.4,warm:.35,rev:.08},
@@ -1227,11 +1231,12 @@ function wsolaShift(x,sr,rAt){const G0=Math.round(sr*.04),H=G0>>2,N=x.length,y=n
   if(c>0){let bc=-1e9;for(let dlt=-S;dlt<=S;dlt+=3){let cor=0;for(let i=0;i<G0-H;i+=4){const o=c+i;if(o>=N)break;cor+=y[o]*read(mid+dlt+(i-G0/2)*r)}if(cor>bc){bc=cor;bestD=dlt}}}
   for(let i=0;i<G0;i++){const o=c+i;if(o>=N)break;y[o]+=w[i]*read(mid+bestD+(i-G0/2)*r);ws[o]+=w[i]}}
  for(let i=0;i<N;i++)y[i]=ws[i]>.05?y[i]/ws[i]:y[i];return y}
-function vKey(){const V=state.vfx;return[Math.round(V.pitch),(+V.tune).toFixed(2),(+V.gate).toFixed(2),V.tune>0?state.key+state.scale:''].join('|')}
+function vKey(){const V=state.vfx;return[(+V.nr||0).toFixed(2),Math.round(V.pitch),(+V.tune).toFixed(2),(+V.gate).toFixed(2),V.tune>0?state.key+state.scale:''].join('|')}
 function scheduleProcess(){clearTimeout(VP.timer);VP.timer=setTimeout(processVoice,350)}
 async function processVoice(){if(!E||!E.voiceRaw||VP.busy)return;const k=vKey();if(k===VP.key&&E.voiceBuf)return;VP.busy=true;
  const st=$('#vStatus');if(st)st.textContent='Procesando la voz…';await new Promise(r=>setTimeout(r,30));
  try{const raw=E.voiceRaw,sr=raw.sampleRate,V=state.vfx;let x=raw.getChannelData(0).slice();
+  if(V.nr>0){if(VP.nrOf!==raw||VP.nrAmt!==V.nr){VP.nrData=denoise(x,sr,V.nr);VP.nrOf=raw;VP.nrAmt=V.nr}x=VP.nrData.slice()}
   if(V.gate>0){const B=Math.round(sr*.01),thr=Math.pow(10,(-62+V.gate*38)/20),floor=Math.pow(10,-V.gate*40/20);let g=1;
    for(let b=0;b*B<x.length;b++){let e=0;const s=b*B,en=Math.min(x.length,s+B);for(let i=s;i<en;i++)e+=x[i]*x[i];const rms=Math.sqrt(e/(en-s||1)),tg=rms<thr?floor:1;
     for(let i=s;i<en;i++){g+=(tg-g)*(tg>g?.02:.002);x[i]*=g}}}
@@ -1250,6 +1255,37 @@ function setRaw(buf){const sr=buf.sampleRate,m=E.ac.createBuffer(1,buf.length,sr
  for(let c=0;c<buf.numberOfChannels;c++){const s=buf.getChannelData(c);for(let i=0;i<d.length;i++)d[i]+=s[i]/buf.numberOfChannels}
  let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));E.rawGain=pk>0?Math.min(40,.92/pk):1;
  E.voiceRaw=m;E.voiceBuf=null;VP.key='';VP.trackOf=null;drawWave();processVoice()}
+/* ---------- background noise reduction (local, spectral) ---------- */
+function fftInit(N){const lv=Math.log2(N),rev=new Uint32Array(N),cs=new Float32Array(N/2),sn=new Float32Array(N/2);
+ for(let i=0;i<N;i++){let r=0;for(let b=0;b<lv;b++)r|=((i>>b)&1)<<(lv-1-b);rev[i]=r}for(let i=0;i<N/2;i++){cs[i]=Math.cos(2*Math.PI*i/N);sn[i]=-Math.sin(2*Math.PI*i/N)}return{N,rev,cs,sn}}
+function fft(T,re,im,inv){const{N,rev,cs,sn}=T;for(let i=0;i<N;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+ for(let size=2;size<=N;size<<=1){const h=size>>1,st=N/size;for(let i=0;i<N;i+=size)for(let k=0;k<h;k++){const c=cs[k*st],s=inv?-sn[k*st]:sn[k*st],a=i+k,b=a+h,tr=re[b]*c-im[b]*s,ti=re[b]*s+im[b]*c;re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti}}
+ if(inv)for(let i=0;i<N;i++){re[i]/=N;im[i]/=N}}
+function denoise(x,sr,amt){const N=2048,H=512,nb=N/2+1,T=fftInit(N),w=new Float32Array(N);for(let i=0;i<N;i++)w[i]=.5-.5*Math.cos(2*Math.PI*i/N);
+ const L=x.length,F=Math.ceil((L+N)/H),pad=new Float32Array(L+2*N);pad.set(x,N);
+ const mag=new Float32Array(F*nb),re=new Float32Array(N),im=new Float32Array(N);
+ for(let f=0;f<F;f++){const o=f*H;for(let i=0;i<N;i++){re[i]=(pad[o+i]||0)*w[i];im[i]=0}fft(T,re,im,false);for(let k=0;k<nb;k++)mag[f*nb+k]=Math.hypot(re[k],im[k])}
+ // noise profile per bin: low percentile over time (works even without silent parts)
+ const noise=new Float32Array(nb),step=Math.max(1,Math.floor(F/600)),col=[];
+ for(let k=0;k<nb;k++){col.length=0;for(let f=0;f<F;f+=step)col.push(mag[f*nb+k]);col.sort((a,b)=>a-b);noise[k]=col[Math.floor(col.length*.12)]||0}
+ const over=1+amt*3,floor=Math.pow(10,-(8+amt*22)/20),out=new Float32Array(L+2*N),prev=new Float32Array(nb).fill(1),g=new Float32Array(nb);
+ for(let f=0;f<F;f++){const o=f*H;for(let i=0;i<N;i++){re[i]=(pad[o+i]||0)*w[i];im[i]=0}fft(T,re,im,false);
+  for(let k=0;k<nb;k++){const m=mag[f*nb+k],n=noise[k]*over,snr=m*m/(n*n+1e-12),gg=Math.max(floor,snr/(1+snr));g[k]=Math.max(gg,prev[k]*.55)}
+  for(let k=1;k<nb-1;k++){const s=(g[k-1]+2*g[k]+g[k+1])/4;prev[k]=s}prev[0]=g[0];prev[nb-1]=g[nb-1];
+  for(let k=0;k<nb;k++){const gk=prev[k];re[k]*=gk;im[k]*=gk;if(k>0&&k<N/2){re[N-k]=re[k];im[N-k]=-im[k]}}
+  fft(T,re,im,true);for(let i=0;i<N;i++)out[o+i]+=re[i]*w[i]}
+ const r=new Float32Array(L),norm=1/1.5;for(let i=0;i<L;i++)r[i]=out[N+i]*norm;return r}
+async function isolateAI(){if(!E||!E.voiceRaw)return toast('Primero graba o carga una toma');
+ const key=($('#elKey')&&$('#elKey').value.trim())||(()=>{try{return localStorage.getItem('eb_el_key')}catch(_){return''}})();
+ if(!key){toast('Pega tu clave de ElevenLabs en “Texto a voz → Con mi voz” y vuelve a intentarlo');TTS.mode='clone';ttsInit();$('#elKey').scrollIntoView({behavior:'smooth',block:'center'});return}
+ const st=$('#vStatus');st.textContent='🤖 Aislando la voz con IA…';const b=$('#vIso');b.disabled=true;
+ try{const fd=new FormData();const g=E.rawGain||1,tmp=E.ac.createBuffer(1,E.voiceRaw.length,E.voiceRaw.sampleRate),d=tmp.getChannelData(0),s=E.voiceRaw.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=s[i]*g;
+  fd.append('audio',wav(tmp),'voz.wav');
+  let r;try{r=await fetch('https://api.elevenlabs.io/v1/audio-isolation',{method:'POST',headers:{'xi-api-key':key},body:fd})}catch(_){throw new Error('No hay conexión con ElevenLabs')}
+  if(!r.ok){if(r.status===401)throw new Error('La clave no es válida');if(r.status===402||r.status===403)throw new Error('Tu plan de ElevenLabs no permite esto o no tienes créditos');throw new Error('ElevenLabs respondió '+r.status)}
+  const buf=await E.ac.decodeAudioData(await r.arrayBuffer());const name=(curTake?curTake.name:'Toma')+' (voz aislada)';curTake=null;setRaw(buf);await saveTake(name,true);toast('✓ Voz aislada: se guardó como toma nueva')}
+ catch(err){toast('✗ '+err.message);st.textContent=takeInfo()}
+ b.disabled=false}
 /* ---------- takes (saved on this device) ---------- */
 const VDB={db:null,open(){return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{const r=indexedDB.open('estudioBeatVoz',1);r.onupgradeneeded=()=>r.result.createObjectStore('takes',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('takes',mode),q=fn(t.objectStore('takes'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
@@ -1278,7 +1314,7 @@ async function exportVoice(withFx=true){if(!E||!E.voiceRaw)return toast('No hay 
 function renderVoice(){
  $('#vPresets').innerHTML=Object.keys(VPRESETS).map(n=>`<button class="chip ${vPreset===n?'on':''}" data-vpre="${n}">${VPRESETS[n].e} ${n}</button>`).join('');
  const K=(p,l,mn,mx,d,f,c)=>knob(p,l,mn,mx,d,f,true,c);
- $('#vfxTone').innerHTML=K('vfx.pitch','TONO',-12,12,0,'st','#ffb547')+K('vfx.tune','AUTOTUNE',0,1,0,'pct','#37e07a')+K('vfx.gate','QUITA RUIDO',0,1,0,'pct','#8a93a5');
+ $('#vfxTone').innerHTML=K('vfx.nr','QUITA FONDO',0,1,0,'pct','#4dd6ff')+K('vfx.pitch','TONO',-12,12,0,'st','#ffb547')+K('vfx.tune','AUTOTUNE',0,1,0,'pct','#37e07a')+K('vfx.gate','QUITA RUIDO',0,1,0,'pct','#8a93a5');
  $('#vfxEq').innerHTML=K('vfx.hpf','CORTE GRAVE',20,500,80,'hz','#8a93a5')+K('vfx.b1','GRAVES',-12,12,0,'db','#ff7a45')+K('vfx.b2','CUERPO',-12,12,0,'db','#ff9a4d')+K('vfx.b3','MEDIOS',-12,12,0,'db','#ffb547')+K('vfx.b4','PRESENCIA',-12,12,0,'db','#ffd24a')+K('vfx.b5','AIRE',-12,12,0,'db','#f5e36b');
  $('#vfxDyn').innerHTML=K('vfx.comp','COMPRESOR',0,1,.3,'pct','#4db8ff')+K('vfx.deess','SUAVIZA S',0,1,0,'pct','#7ce8ff')+K('vfx.warm','CALIDEZ',0,1,0,'pct','#ff9a4d');
  $('#vfxChar').innerHTML=K('vfx.robot','ROBOT',0,1,0,'pct','#b18cff')+K('vfx.radio','RADIO',0,1,0,'pct','#9ae06b')+K('vfx.dist','DISTORSIÓN',0,1,0,'pct','#ff4d5e')+K('vfx.chorus','CORO',0,1,0,'pct','#d68cff')+K('vfx.flanger','FLANGER',0,1,0,'pct','#8466ff')+K('vfx.trem','TRÉMOLO',0,1,0,'pct','#ff7fc8')+K('vfx.double','DOBLE VOZ',0,1,0,'pct','#5de0b5');
@@ -1300,6 +1336,8 @@ $('#vRec').onclick=async()=>{ensureAudio();const b=$('#vRec');
 $('#vPlay').onclick=()=>{ensureAudio();if(!E.voiceBuf)return toast(E.voiceRaw?'Procesando… intenta en un segundo':'Primero graba o carga una toma');stopVoice();startVoice(E.ac.currentTime+.02)};
 $('#vPlayRaw').onclick=()=>{ensureAudio();if(!E.voiceRaw)return toast('Primero graba o carga una toma');stopVoice();const s=E.ac.createBufferSource(),g=G(E.ac,E.rawGain||1);s.buffer=E.voiceRaw;s.connect(g);g.connect(E.out);s.start();voiceSrc=s;toast('▷ Original, sin efectos')};
 $('#vClear').onclick=()=>{if(!E||!E.voiceRaw)return toast('No hay grabación que limpiar');ask('¿Borrar esta grabación y empezar de nuevo?',async()=>{stopVoice();if(vRecorder&&vRecorder.state==='recording'){vRecorder.onstop=null;vRecorder.stop()}const t=curTake;if(t){try{await VDB.del(t.id)}catch(_){}}curTake=null;E.voiceRaw=null;E.voiceBuf=null;VP.key='';VP.trackOf=null;drawWave();$('#vStatus').textContent='Listo para grabar de nuevo.';listTakes();toast('🗑 Grabación borrada')})};
+$('#vNr').onclick=()=>{if(!E||!E.voiceRaw)return toast('Primero graba o carga una toma');const on=!(state.vfx.nr>0);state.vfx.nr=on?.7:0;renderVoice();scheduleProcess();autosave();toast(on?'🧹 Quitando ruido de fondo… ajústalo con la perilla QUITA FONDO':'Ruido de fondo: apagado');if(on)setTimeout(()=>{if(E.voiceBuf&&!VP.busy){stopVoice();startVoice(E.ac.currentTime+.02)}},2200)};
+$('#vIso').onclick=isolateAI;
 $('#vStop').onclick=()=>{stopVoice();try{speechSynthesis.cancel()}catch(_){}};
 $('#vFile').onchange=async e=>{ensureAudio();const f=e.target.files[0];if(!f)return;try{const buf=await E.ac.decodeAudioData(await f.arrayBuffer());curTake=null;setRaw(buf);await saveTake(f.name.replace(/\.[^.]+$/,''),true)}catch(_){toast('No se pudo abrir ese audio')}e.target.value=''};
 $('#vSave').onclick=()=>saveTake(curTake?curTake.name:null,false);
